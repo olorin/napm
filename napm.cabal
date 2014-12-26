@@ -19,6 +19,7 @@ cabal-version:       >=1.10
 
 executable napm
   main-is:             Main.hs
-  build-depends:       base >=4.7 && <4.8
+  build-depends:       base >=4.7 && <4.8,
+                       transformers
   hs-source-dirs:      src
   default-language:    Haskell2010
