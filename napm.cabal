@@ -1,0 +1,24 @@
+name:                napm
+version:             0.1.0.0
+synopsis:            napm is not a password manager
+description:         napm is not a password manager. It's a password
+                     generator designed to be used like a password
+                     manager. You supply a 'seed' passphrase which must
+                     be remembered; this is used as a salt to generate
+                     context-dependent passwords using a cryptographic
+                     hash function.
+homepage:            https://github.com/fractalcat/napm
+license:             MIT
+license-file:        LICENSE
+author:              Sharif Olorin
+maintainer:          sio@tesser.org
+copyright:           2014 Sharif Olorin
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+executable napm
+  main-is:             Main.hs
+  build-depends:       base >=4.7 && <4.8
+  hs-source-dirs:      src
+  default-language:    Haskell2010
