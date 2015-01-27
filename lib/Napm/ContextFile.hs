@@ -11,4 +11,4 @@ import           Text.Trifecta
 type Context = (Text, Int)
 
 comment :: Parser ()
-comment =  string "--" >> manyTill (try newLine) >> return ()
+comment =  string "--" >> manyTill anyChar (try newline) >> return ()
