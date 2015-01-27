@@ -32,7 +32,8 @@ library
                        base64-bytestring,
                        text,
                        bytestring,
-                       trifecta
+                       trifecta,
+                       blaze-markup <= 0.6.2
   ghc-options:         -Wwarn
                        -Wall
 
