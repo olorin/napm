@@ -16,10 +16,17 @@ copyright:           2014 Sharif Olorin
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
+category:            System
+
+source-repository    head
+  type:              git
+  location:          git@github.com:fractalcat/napm.git
 
 executable napm
   main-is:             Main.hs
   build-depends:       base >=4.7 && <4.8,
-                       transformers
+                       transformers,
+                       text,
+                       directory
   hs-source-dirs:      src
   default-language:    Haskell2010

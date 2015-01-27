@@ -1,20 +1,25 @@
 module Main where
 
-import System.IO
-import Control.Exception
+import           Control.Applicative
+import           Control.Exception
+import           Control.Monad
+import           Data.Text           (Text)
+import qualified Data.Text           as T
+import           System.Directory
+import           System.IO
 
-getPassword :: IO String
+getPassword :: IO Text
 getPassword = getPassword' >>= passThroughAction (putStrLn "")
   where
-    getPassword' =     putStr "Seed: "
+    getPassword' = liftM T.pack $ putStr "Seed: "
                    >>  hFlush stdout
                    >>  hSetEcho stdin False
                    >>  getLine
-                   >>= return
 
     passThroughAction act x = act >> return x
 
+napmDataDir :: IO (Either SomeException FilePath)
+napmDataDir = try $ getAppUserDataDirectory "napm"
+
 main :: IO ()
-main = do
-    pass <- getPassword
-    putStrLn pass
+main = error "NYI"
