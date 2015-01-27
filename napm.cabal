@@ -27,6 +27,7 @@ executable napm
   build-depends:       base >=4.7 && <4.8,
                        transformers,
                        text,
-                       directory
+                       directory,
+                       cryptohash
   hs-source-dirs:      src
   default-language:    Haskell2010
