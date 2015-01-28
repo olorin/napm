@@ -57,4 +57,5 @@ test-suite napm-test
   build-depends:       base >=4.5 && <5,
                        hspec,
                        text,
+                       random,
                        napm
