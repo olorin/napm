@@ -34,7 +34,8 @@ library
                        bytestring,
                        trifecta,
                        blaze-markup <= 0.6.2,
-                       bifunctors
+                       bifunctors,
+                       ansi-wl-pprint
   ghc-options:         -Wwarn
                        -Wall
 

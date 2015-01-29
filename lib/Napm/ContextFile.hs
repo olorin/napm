@@ -1,16 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Napm.ContextFile (
-    PasswordContext
+    PasswordContext,
+    parseContextFile
 ) where
 
 import           Control.Applicative
 import           Control.Monad
 import           Data.Bifunctor
-import           Data.ByteString     (ByteString)
-import qualified Data.ByteString     as BS
-import           Data.Text           (Text)
-import qualified Data.Text           as T
+import           Data.ByteString              (ByteString)
+import qualified Data.ByteString              as BS
+import           Data.Maybe
+import           Data.Text                    (Text)
+import qualified Data.Text                    as T
+import           Text.PrettyPrint.ANSI.Leijen (Doc)
 import           Text.Trifecta
 
 -- |The context in which a password is generated. Consists of a textual
@@ -21,16 +24,31 @@ import           Text.Trifecta
 --  accessible by anyone other than the user.
 type PasswordContext = (Text, Integer)
 
+eol :: Parser ()
+eol =  void $ oneOf "\n\r"
+
 comment :: Parser ()
-comment =  string "--" >> manyTill anyChar (try newline) >> return ()
+comment =  char '#' >> skipMany (noneOf "\r\n")
 
 context :: Parser String
 context =  many (noneOf ":")
 
 passwordLength :: Parser Integer
-passwordLength =  decimal <* spaces
+passwordLength =  decimal <* (try eol <|> try comment <|> eof)
 
 passwordContext :: Parser PasswordContext
 passwordContext =  (,) <$>
                    (T.pack <$> context) <*>
                    (char ':' *> passwordLength)
+
+contextLine :: Parser (Maybe PasswordContext)
+contextLine =  whiteSpace >> ((comment >> return Nothing) <|> liftM Just passwordContext) <* whiteSpace
+
+contexts :: Parser [PasswordContext]
+contexts =  catMaybes <$> manyTill contextLine eof
+
+parseContextFile :: FilePath -> IO (Either Doc [PasswordContext])
+parseContextFile fn = liftM finalize $ parseFromFileEx contexts fn
+  where
+    finalize (Success r) = Right r
+    finalize (Failure err) = Left err
