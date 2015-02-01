@@ -58,31 +58,37 @@ readPassphrase = readPassphrase' >>= passThroughAction (hPutStrLn stderr "" >> h
 napmDataDir :: IO (Either String FilePath)
 napmDataDir = first show `fmap` (try $ getAppUserDataDirectory "napm" :: IO (Either SomeException FilePath))
 
-getContexts :: FilePath -> IO (Either String ContextMap)
-getContexts dataDir = doesFileExist napmContextFile >>= maybeParseContexts
-  where
-    napmContextFile = dataDir <> "/contexts"
+napmContextFile :: FilePath -> FilePath
+napmContextFile dataDir = dataDir <> "/contexts"
 
+getContexts :: FilePath -> IO (Either String ContextMap)
+getContexts dataDir = doesFileExist (napmContextFile dataDir) >>= maybeParseContexts
+  where
     maybeParseContexts False = do
         hPutStrLn stderr "Can't find a context file. Proceeding without one."
         return $ Right M.empty
-    maybeParseContexts True = first show `fmap` parseContextFile napmContextFile
+    maybeParseContexts True = first show `fmap` parseContextFile (napmContextFile dataDir)
 
 main :: IO ()
 main = do
     NapmOpts{..} <- execParser napmOptParser
     dataDir <- napmDataDir
-    contexts <- case dataDir of
-        Left e -> return $ Left e
-        Right d -> getContexts d
-    case contexts of
-        Left e -> hPutStrLn stderr e
-        Right ctxs -> do
-            pp <- readPassphrase
-            hPutStr stderr "Context: "
-            ctx <- TIO.hGetLine stdin
-            let (newMap, len) = updateContextMap ctxs (pwlen _passwordLen) ctx
-            TIO.hPutStr stdout $ computePassword len pp ctx
+    case dataDir of
+        Left e -> hPrint stderr e
+        Right dataDir' -> do
+            contexts <- getContexts dataDir'
+            case contexts of
+                Left e -> hPutStrLn stderr e
+                Right ctxs -> do
+                    pp <- readPassphrase
+                    hPutStr stderr "Context: "
+                    ctx <- TIO.hGetLine stdin
+                    let (newMap, len) = updateContextMap ctxs (pwlen _passwordLen) ctx
+                    TIO.hPutStr stdout $ computePassword len pp ctx
+                    r <- writeContextMap newMap $ napmContextFile dataDir'
+                    case r of
+                        Left e -> hPrint stderr e
+                        Right _ -> return ()
   where
     pwlen (-1) = 12
     pwlen l    = l

@@ -3,19 +3,25 @@
 module Napm.Context(
     ContextMap,
     updateContextMap,
-    parseContextFile
+    parseContextFile,
+    writeContextMap
 ) where
 
 import           Control.Applicative
+import           Control.Exception            (SomeException)
+import qualified Control.Exception            as E
 import           Control.Monad
 import           Data.Bifunctor
 import           Data.ByteString              (ByteString)
 import qualified Data.ByteString              as BS
+import           Data.List
 import           Data.Map                     (Map)
 import qualified Data.Map                     as M
 import           Data.Maybe
+import           Data.Monoid
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
+import qualified Data.Text.IO                 as T
 import           Text.PrettyPrint.ANSI.Leijen (Doc)
 import           Text.Trifecta
 
@@ -62,3 +68,11 @@ updateContextMap :: ContextMap -> Int -> Text -> (ContextMap, Int)
 updateContextMap m len context = case M.lookup context m of
     Nothing -> (M.insert context len m, len)
     Just x -> (m, x)
+
+fmtContextMap :: ContextMap -> Text
+fmtContextMap =  T.intercalate "\n" . map fmtItem . M.toList
+  where
+    fmtItem (ctx, len) = ctx <> ":" <> T.pack (show len)
+
+writeContextMap :: ContextMap -> FilePath -> IO (Either SomeException ())
+writeContextMap m fp = E.try (T.writeFile fp (fmtContextMap m))
