@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Napm.ContextFile (
-    PasswordContext,
+module Napm.Context(
+    ContextMap,
+    updateContextMap,
     parseContextFile
 ) where
 
@@ -10,6 +11,8 @@ import           Control.Monad
 import           Data.Bifunctor
 import           Data.ByteString              (ByteString)
 import qualified Data.ByteString              as BS
+import           Data.Map                     (Map)
+import qualified Data.Map                     as M
 import           Data.Maybe
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
@@ -22,7 +25,9 @@ import           Text.Trifecta
 --  password. Contexts are not considered sensitive, although they
 --  contain information which may aid an attacker and so should not be
 --  accessible by anyone other than the user.
-type PasswordContext = (Text, Integer)
+type ContextMap = Map Text Int
+
+type PasswordContext = (Text, Int)
 
 eol :: Parser ()
 eol =  void $ oneOf "\n\r"
@@ -33,8 +38,8 @@ comment =  char '#' >> skipMany (noneOf "\r\n")
 context :: Parser String
 context =  many (noneOf ":")
 
-passwordLength :: Parser Integer
-passwordLength =  decimal <* (try eol <|> try comment <|> eof)
+passwordLength :: Parser Int
+passwordLength =  fromIntegral `fmap` decimal <* (try eol <|> try comment <|> eof)
 
 passwordContext :: Parser PasswordContext
 passwordContext =  (,) <$>
@@ -47,8 +52,13 @@ contextLine =  whiteSpace >> ((comment >> return Nothing) <|> liftM Just passwor
 contexts :: Parser [PasswordContext]
 contexts =  catMaybes <$> manyTill contextLine eof
 
-parseContextFile :: FilePath -> IO (Either Doc [PasswordContext])
+parseContextFile :: FilePath -> IO (Either Doc ContextMap)
 parseContextFile fn = liftM finalize $ parseFromFileEx contexts fn
   where
-    finalize (Success r) = Right r
+    finalize (Success r) = Right $ M.fromList r
     finalize (Failure err) = Left err
+
+updateContextMap :: ContextMap -> Int -> Text -> (ContextMap, Int)
+updateContextMap m len context = case M.lookup context m of
+    Nothing -> (M.insert context len m, len)
+    Just x -> (m, x)

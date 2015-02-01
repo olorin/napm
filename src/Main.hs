@@ -8,6 +8,8 @@ import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Error
 import           Data.Bifunctor
+import           Data.Map                     (Map)
+import qualified Data.Map                     as M
 import           Data.Monoid
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
@@ -18,7 +20,7 @@ import           System.Directory
 import           System.IO
 import           Text.PrettyPrint.ANSI.Leijen (Doc)
 
-import           Napm.ContextFile
+import           Napm.Context
 import           Napm.Password
 
 data NapmOpts = NapmOpts
@@ -56,14 +58,14 @@ readPassphrase = readPassphrase' >>= passThroughAction (hPutStrLn stderr "" >> h
 napmDataDir :: IO (Either String FilePath)
 napmDataDir = first show `fmap` (try $ getAppUserDataDirectory "napm" :: IO (Either SomeException FilePath))
 
-getContexts :: FilePath -> IO (Either String [PasswordContext])
+getContexts :: FilePath -> IO (Either String ContextMap)
 getContexts dataDir = doesFileExist napmContextFile >>= maybeParseContexts
   where
     napmContextFile = dataDir <> "/contexts"
 
     maybeParseContexts False = do
         hPutStrLn stderr "Can't find a context file. Proceeding without one."
-        return $ Right []
+        return $ Right M.empty
     maybeParseContexts True = first show `fmap` parseContextFile napmContextFile
 
 main :: IO ()
@@ -75,12 +77,12 @@ main = do
         Right d -> getContexts d
     case contexts of
         Left e -> hPutStrLn stderr e
-        Right _ -> do
+        Right ctxs -> do
             pp <- readPassphrase
             hPutStr stderr "Context: "
             ctx <- TIO.hGetLine stdin
-            TIO.hPutStr stdout $ computePassword (pwlen _passwordLen) pp ctx
-
+            let (newMap, len) = updateContextMap ctxs (pwlen _passwordLen) ctx
+            TIO.hPutStr stdout $ computePassword len pp ctx
   where
     pwlen (-1) = 12
     pwlen l    = l
