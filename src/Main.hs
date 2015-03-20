@@ -24,8 +24,10 @@ import           Napm.Context
 import           Napm.Password
 
 data NapmOpts = NapmOpts
-    { _passwordLen :: Int -- ^ Override default (or configured) length of
-                          --   generated password.
+    { _passwordLen :: Int
+    -- ^ Override default (or configured) length of generated password.
+    , _context     :: String
+    -- ^ Supply context via the CLI rather than being prompted for it.
     } deriving Show
 
 napmOptParser :: ParserInfo NapmOpts
@@ -43,6 +45,13 @@ napmOptParser =  info (helper <*> opts)
                             <> help ("Override default or configured password " <>
                                      "length. The default of -1 will cause the " <>
                                      "default or configured value to be used.")
+                           )
+           <*> strOption   (   long "context"
+                            <> short 'c'
+                            <> metavar "CONTEXT"
+                            <> value ""
+                            <> help ("Supply context via CLI rather than " <>
+                                     "being prompted for it.")
                            )
 
 readPassphrase :: IO Text
@@ -81,8 +90,7 @@ main = do
                 Left e -> hPutStrLn stderr e
                 Right ctxs -> do
                     pp <- readPassphrase
-                    hPutStr stderr "Context: "
-                    ctx <- TIO.hGetLine stdin
+                    ctx <- getOrReadContext _context
                     let (newMap, len) = updateContextMap ctxs (pwlen _passwordLen) ctx
                     TIO.hPutStr stdout $ computePassword len pp ctx
                     r <- writeContextMap newMap $ napmContextFile dataDir'
@@ -92,3 +100,6 @@ main = do
   where
     pwlen (-1) = 12
     pwlen l    = l
+
+    getOrReadContext "" = hPutStr stderr "Context: " >> TIO.hGetLine stdin
+    getOrReadContext c  = return $ T.pack c
