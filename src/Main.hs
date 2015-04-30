@@ -20,9 +20,9 @@ import           Napm.Context
 import           Napm.Password
 
 data NapmOpts = NapmOpts
-    { _passwordLen :: Int
+    { napmPasswordLen :: Int
     -- ^ Override default (or configured) length of generated password.
-    , _context     :: String
+    , napmContext     :: String
     -- ^ Supply context via the CLI rather than being prompted for it.
     } deriving Show
 
@@ -62,8 +62,8 @@ readPassphrase = do
                    >> hSetEcho stdin False
                    >> TIO.hGetLine stdin
 
-napmDataDir :: (MonadError String m, MonadIO m) => m FilePath
-napmDataDir = do
+getDataDir :: (MonadError String m, MonadIO m) => m FilePath
+getDataDir = do
     dir <- liftIO $ try $ getAppUserDataDirectory "napm"
     case dir of
         Left e -> throwError $ show (e :: SomeException)
@@ -85,11 +85,11 @@ main :: IO ()
 main = do
     NapmOpts{..} <- execParser napmOptParser
     res <- runExceptT $ do
-        dataDir <- napmDataDir
+        dataDir <- getDataDir
         contexts <- getContexts dataDir
         pp <- liftIO readPassphrase
-        ctx <- liftIO $ getOrReadContext _context
-        let (newMap, len) = updateContextMap contexts (pwlen _passwordLen) ctx
+        ctx <- liftIO $ getOrReadContext napmContext
+        let (newMap, len) = updateContextMap contexts (pwlen napmPasswordLen) ctx
         liftIO $ TIO.hPutStr stdout $ computePassword len pp ctx
         writeContextMap newMap $ napmContextFile dataDir
     case res of
