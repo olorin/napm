@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts  #-}
 
 module Napm.Context(
     ContextMap,
@@ -11,10 +12,8 @@ import           Control.Applicative
 import           Control.Exception            (SomeException)
 import qualified Control.Exception            as E
 import           Control.Monad
-import           Data.Bifunctor
-import           Data.ByteString              (ByteString)
-import qualified Data.ByteString              as BS
-import           Data.List
+import           Control.Monad.Error.Class
+import           Control.Monad.IO.Class
 import           Data.Map                     (Map)
 import qualified Data.Map                     as M
 import           Data.Maybe
@@ -22,7 +21,6 @@ import           Data.Monoid
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
-import           Text.PrettyPrint.ANSI.Leijen (Doc)
 import           Text.Trifecta
 
 -- |The context in which a password is generated. Consists of a textual
@@ -45,7 +43,7 @@ context :: Parser String
 context =  many (noneOf ":")
 
 passwordLength :: Parser Int
-passwordLength =  fromIntegral `fmap` decimal <* (try eol <|> try comment <|> eof)
+passwordLength =  fromIntegral <$> decimal <* (try eol <|> try comment <|> eof)
 
 passwordContext :: Parser PasswordContext
 passwordContext =  (,) <$>
@@ -58,15 +56,18 @@ contextLine =  whiteSpace >> ((comment >> return Nothing) <|> liftM Just passwor
 contexts :: Parser [PasswordContext]
 contexts =  catMaybes <$> manyTill contextLine eof
 
-parseContextFile :: FilePath -> IO (Either Doc ContextMap)
-parseContextFile fn = liftM finalize $ parseFromFileEx contexts fn
-  where
-    finalize (Success r) = Right $ M.fromList r
-    finalize (Failure err) = Left err
+parseContextFile :: (MonadError String m, MonadIO m)
+                 => FilePath
+                 -> m ContextMap
+parseContextFile fn = do
+    parsed <- liftIO $ parseFromFileEx contexts fn
+    case parsed of
+        Success r -> return $ M.fromList r
+        Failure e -> throwError $ show e
 
 updateContextMap :: ContextMap -> Int -> Text -> (ContextMap, Int)
-updateContextMap m len context = case M.lookup context m of
-    Nothing -> (M.insert context len m, len)
+updateContextMap m len ctx = case M.lookup ctx m of
+    Nothing -> (M.insert ctx len m, len)
     Just x -> (m, x)
 
 fmtContextMap :: ContextMap -> Text
@@ -74,5 +75,12 @@ fmtContextMap =  T.intercalate "\n" . map fmtItem . M.toList
   where
     fmtItem (ctx, len) = ctx <> ":" <> T.pack (show len)
 
-writeContextMap :: ContextMap -> FilePath -> IO (Either SomeException ())
-writeContextMap m fp = E.try (T.writeFile fp (fmtContextMap m))
+writeContextMap :: (MonadError String m, MonadIO m)
+                => ContextMap
+                -> FilePath
+                -> m ()
+writeContextMap m fp = do
+    res <- liftIO $ E.try (T.writeFile fp (fmtContextMap m))
+    case res of
+        Left e -> throwError $ show (e :: SomeException)
+        Right _ -> return ()

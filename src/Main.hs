@@ -1,32 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE FlexibleContexts  #-}
 
 module Main where
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad
-import           Control.Monad.Error
-import           Data.Bifunctor
-import           Data.Map                     (Map)
+import           Control.Monad.Except
 import qualified Data.Map                     as M
 import           Data.Monoid
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
-import           Data.Text.Encoding
 import qualified Data.Text.IO                 as TIO
 import           Options.Applicative
 import           System.Directory
 import           System.IO
-import           Text.PrettyPrint.ANSI.Leijen (Doc)
 
 import           Napm.Context
 import           Napm.Password
 
 data NapmOpts = NapmOpts
-    { _passwordLen :: Int
+    { napmPasswordLen :: Int
     -- ^ Override default (or configured) length of generated password.
-    , _context     :: String
+    , napmContext     :: String
     -- ^ Supply context via the CLI rather than being prompted for it.
     } deriving Show
 
@@ -55,48 +51,50 @@ napmOptParser =  info (helper <*> opts)
                            )
 
 readPassphrase :: IO Text
-readPassphrase = readPassphrase' >>= passThroughAction (hPutStrLn stderr "" >> hSetEcho stdin True)
+readPassphrase = do
+    pp <- readPassphrase'
+    hPutStrLn stderr ""
+    hSetEcho stdin True
+    return pp
   where
     readPassphrase' = hPutStr stderr "Seed: "
                    >> hFlush stderr
                    >> hSetEcho stdin False
                    >> TIO.hGetLine stdin
 
-    passThroughAction act x = act >> return x
-
-napmDataDir :: IO (Either String FilePath)
-napmDataDir = first show `fmap` (try $ getAppUserDataDirectory "napm" :: IO (Either SomeException FilePath))
+getDataDir :: (MonadError String m, MonadIO m) => m FilePath
+getDataDir = do
+    dir <- liftIO $ try $ getAppUserDataDirectory "napm"
+    case dir of
+        Left e -> throwError $ show (e :: SomeException)
+        Right dir' -> return dir'
 
 napmContextFile :: FilePath -> FilePath
 napmContextFile dataDir = dataDir <> "/contexts"
 
-getContexts :: FilePath -> IO (Either String ContextMap)
-getContexts dataDir = doesFileExist (napmContextFile dataDir) >>= maybeParseContexts
-  where
-    maybeParseContexts False = do
-        hPutStrLn stderr "Can't find a context file. Proceeding without one."
-        return $ Right M.empty
-    maybeParseContexts True = first show `fmap` parseContextFile (napmContextFile dataDir)
+getContexts :: (MonadError String m, MonadIO m)
+            => FilePath
+            -> m ContextMap
+getContexts dataDir = do
+    existsp <- liftIO $ doesFileExist (napmContextFile dataDir)
+    if existsp then parseContextFile (napmContextFile dataDir) else do
+        liftIO $ hPutStrLn stderr "Can't find a context file. Proceeding without one."
+        return M.empty
 
 main :: IO ()
 main = do
     NapmOpts{..} <- execParser napmOptParser
-    dataDir <- napmDataDir
-    case dataDir of
+    res <- runExceptT $ do
+        dataDir <- getDataDir
+        contexts <- getContexts dataDir
+        pp <- liftIO readPassphrase
+        ctx <- liftIO $ getOrReadContext napmContext
+        let (newMap, len) = updateContextMap contexts (pwlen napmPasswordLen) ctx
+        liftIO $ TIO.hPutStr stdout $ computePassword len pp ctx
+        writeContextMap newMap $ napmContextFile dataDir
+    case res of
         Left e -> hPrint stderr e
-        Right dataDir' -> do
-            contexts <- getContexts dataDir'
-            case contexts of
-                Left e -> hPutStrLn stderr e
-                Right ctxs -> do
-                    pp <- readPassphrase
-                    ctx <- getOrReadContext _context
-                    let (newMap, len) = updateContextMap ctxs (pwlen _passwordLen) ctx
-                    TIO.hPutStr stdout $ computePassword len pp ctx
-                    r <- writeContextMap newMap $ napmContextFile dataDir'
-                    case r of
-                        Left e -> hPrint stderr e
-                        Right _ -> return ()
+        Right _ -> return ()
   where
     pwlen (-1) = 12
     pwlen l    = l

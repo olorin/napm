@@ -32,6 +32,8 @@ library
                        base64-bytestring,
                        text,
                        bytestring,
+                       mtl,
+                       transformers,
                        trifecta,
                        blaze-markup <= 0.6.2,
                        bifunctors,

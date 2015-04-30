@@ -2,7 +2,6 @@ module Napm.Password(
     computePassword
 ) where
 
-import           Control.Monad
 import qualified Crypto.Hash.SHA512     as SHA
 import qualified Data.ByteString.Base64 as B64
 import           Data.Monoid
