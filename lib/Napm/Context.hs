@@ -21,6 +21,7 @@ import           Data.Monoid
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
 import qualified Data.Text.IO                 as T
+import           System.Posix.Files
 import           Text.Trifecta
 
 -- |The context in which a password is generated. Consists of a textual
@@ -56,10 +57,23 @@ contextLine =  whiteSpace >> ((comment >> return Nothing) <|> liftM Just passwor
 contexts :: Parser [PasswordContext]
 contexts =  catMaybes <$> manyTill contextLine eof
 
+-- | Catch fire if the context file isn't chmod 600.
+bailOnInsecureContext :: (MonadError String m, MonadIO m)
+                     => FilePath
+                     -> m ()
+bailOnInsecureContext fn = do
+    st <- liftIO $ getFileStatus fn
+    case intersectFileModes badModes (fileMode st) of
+        0 -> return () -- must be go-rwx
+        _ -> throwError $ "Context file " <> fn <> " must be accessible only by its owner (chmod 600)."
+  where
+    badModes = unionFileModes groupModes otherModes
+
 parseContextFile :: (MonadError String m, MonadIO m)
                  => FilePath
                  -> m ContextMap
 parseContextFile fn = do
+    bailOnInsecureContext fn
     parsed <- liftIO $ parseFromFileEx contexts fn
     case parsed of
         Success r -> return $ M.fromList r

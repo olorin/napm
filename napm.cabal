@@ -38,7 +38,8 @@ library
                        blaze-markup <= 0.6.2,
                        bifunctors,
                        ansi-wl-pprint,
-                       containers
+                       containers,
+                       unix
   ghc-options:         -Wwarn
                        -Wall
 
