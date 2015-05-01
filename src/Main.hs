@@ -93,7 +93,7 @@ main = do
         liftIO $ TIO.hPutStr stdout $ computePassword len pp ctx
         writeContextMap newMap $ napmContextFile dataDir
     case res of
-        Left e -> hPrint stderr e
+        Left e -> hPutStrLn stderr e
         Right _ -> return ()
   where
     pwlen (-1) = 12
