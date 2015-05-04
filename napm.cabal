@@ -12,7 +12,7 @@ license:             MIT
 license-file:        LICENSE
 author:              Sharif Olorin
 maintainer:          sio@tesser.org
-copyright:           2014 Sharif Olorin
+copyright:           2014-2015 Sharif Olorin
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
@@ -25,37 +25,41 @@ source-repository    head
 library
   exposed-modules:     Napm.Password
                        Napm.Context
+                       Napm.Types
+                       Napm.Util
   default-language:    Haskell2010
   hs-source-dirs:      lib
-  build-depends:       base >=4.5 && <4.8,
-                       cryptohash,
+  build-depends:       base >=4.5 && <5,
+                       ansi-wl-pprint,
                        base64-bytestring,
-                       text,
+                       bifunctors,
+                       blaze-markup <= 0.6.2,
                        bytestring,
+                       containers,
+                       cryptohash,
+                       directory,
                        mtl,
+                       optparse-applicative,
+                       text,
                        transformers,
                        trifecta,
-                       blaze-markup <= 0.6.2,
-                       bifunctors,
-                       ansi-wl-pprint,
-                       containers,
                        unix
   ghc-options:         -Wwarn
                        -Wall
 
 executable napm
   main-is:             Main.hs
-  build-depends:       base >=4.5 && <4.8,
-                       transformers,
-                       text,
-                       directory,
+  build-depends:       base >=4.5 && <5,
                        ansi-wl-pprint,
                        bifunctors,
-                       mtl,
-                       optparse-applicative >= 0.11,
                        containers,
-                       napm
-  hs-source-dirs:      src
+                       directory,
+                       mtl,
+                       napm,
+                       optparse-applicative >= 0.11,
+                       text,
+                       transformers
+  Hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wwarn
                        -Wall
@@ -67,6 +71,6 @@ test-suite napm-test
   default-language:    Haskell2010
   build-depends:       base >=4.5 && <5,
                        hspec,
-                       text,
+                       napm,
                        random,
-                       napm
+                       text

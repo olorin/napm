@@ -24,15 +24,7 @@ import qualified Data.Text.IO                 as T
 import           System.Posix.Files
 import           Text.Trifecta
 
--- |The context in which a password is generated. Consists of a textual
---  context that's not sensitive and easy for the user to remember
---  (hostname, URL, whatever), plus the length of the generated
---  password. Contexts are not considered sensitive, although they
---  contain information which may aid an attacker and so should not be
---  accessible by anyone other than the user.
-type ContextMap = Map Text Int
-
-type PasswordContext = (Text, Int)
+import Napm.Types
 
 eol :: Parser ()
 eol =  void $ oneOf "\n\r"
