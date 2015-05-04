@@ -42,22 +42,3 @@ getDataDir = do
         Left e -> throwError $ show (e :: SomeException)
         Right dir' -> return dir'
 
-{-
-Return the path to our context file, given the path to our data
-directory.
--}
-napmContextFile :: FilePath
-                -> FilePath
-napmContextFile dataDir = dataDir <> "/contexts"
-
-{-
-Read existing contexts from the context file, if it exists.
--}
-getContexts :: (MonadError String m, MonadIO m)
-            => FilePath
-            -> m ContextMap
-getContexts dataDir = do
-    existsp <- liftIO $ doesFileExist (napmContextFile dataDir)
-    if existsp then parseContextFile (napmContextFile dataDir) else do
-        liftIO $ hPutStrLn stderr "Can't find a context file. Proceeding without one."
-        return M.empty
