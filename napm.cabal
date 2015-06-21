@@ -33,7 +33,6 @@ library
                        ansi-wl-pprint,
                        base64-bytestring,
                        bifunctors,
-                       blaze-markup <= 0.6.2,
                        bytestring,
                        containers,
                        cryptohash,
