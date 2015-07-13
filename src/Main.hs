@@ -6,8 +6,8 @@ module Main where
 
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Except
-import qualified Data.Text            as T
-import qualified Data.Text.IO         as TIO
+import qualified Data.Text                  as T
+import qualified Data.Text.IO               as TIO
 import           Options.Applicative
 import           System.IO
 

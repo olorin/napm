@@ -1,26 +1,27 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module Napm.Context where
 
 import           Control.Applicative
-import           Control.Exception            (SomeException)
-import qualified Control.Exception            as E
+import           Control.Exception         (SomeException)
+import qualified Control.Exception         as E
 import           Control.Monad
 import           Control.Monad.Error.Class
 import           Control.Monad.IO.Class
-import qualified Data.Map                     as M
+import qualified Data.Map                  as M
 import           Data.Maybe
 import           Data.Monoid
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T
-import qualified Data.Text.IO                 as T
+import           Data.Text                 (Text)
+import qualified Data.Text                 as T
+import qualified Data.Text.IO              as T
 import           System.Directory
 import           System.IO
 import           System.Posix.Files
 import           Text.Trifecta
 
-import Napm.Types
+import           Napm.Types
 
 eol :: Parser ()
 eol =  void $ oneOf "\n\r"
@@ -81,7 +82,7 @@ fmtContextMap =  T.intercalate "\n" . map fmtItem . M.toList
 
 {-
 Write context map out to file, ensuring it is accessible only by its
-owner afterwards. 
+owner afterwards.
 -}
 writeContextMap :: (MonadError String m, MonadIO m)
                 => ContextMap
