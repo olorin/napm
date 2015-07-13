@@ -3,7 +3,8 @@
 module Napm.Util where
 
 import Control.Exception
-import Control.Monad.Except
+import Control.Monad.Error.Class
+import Control.Monad.IO.Class
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Map as M
