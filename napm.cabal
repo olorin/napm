@@ -39,6 +39,7 @@ library
                        cryptohash,
                        directory,
                        mtl,
+                       lens,
                        optparse-applicative,
                        text,
                        transformers,
