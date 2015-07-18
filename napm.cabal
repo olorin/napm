@@ -25,6 +25,7 @@ source-repository    head
 library
   exposed-modules:     Napm.Password
                        Napm.Context
+                       Napm.Options
                        Napm.Types
                        Napm.Util
   default-language:    Haskell2010

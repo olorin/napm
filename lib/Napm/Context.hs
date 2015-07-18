@@ -35,15 +35,15 @@ context =  many (noneOf ":")
 passwordLength :: Parser Int
 passwordLength =  fromIntegral <$> decimal <* (try eol <|> try comment <|> eof)
 
-passwordContext :: Parser PasswordContext
+passwordContext :: Parser Context
 passwordContext =  (,) <$>
                    (T.pack <$> context) <*>
                    (char ':' *> passwordLength)
 
-contextLine :: Parser (Maybe PasswordContext)
+contextLine :: Parser (Maybe Context)
 contextLine =  whiteSpace >> ((comment >> return Nothing) <|> liftM Just passwordContext) <* whiteSpace
 
-contexts :: Parser [PasswordContext]
+contexts :: Parser [Context]
 contexts =  catMaybes <$> manyTill contextLine eof
 
 {-
