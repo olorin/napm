@@ -31,7 +31,7 @@ main = do
         Left e -> hPutStrLn stderr e
         Right _ -> return ()
   where
-    pwlen (-1) = 12
+    pwlen (-1) = 16
     pwlen l    = l
 
     getOrReadContext "" = hPutStr stderr "Context: " >> TIO.hGetLine stdin
