@@ -6,16 +6,10 @@ module Napm.Util where
 import           Control.Exception
 import           Control.Monad.Error.Class
 import           Control.Monad.IO.Class
-import qualified Data.Map                  as M
-import           Data.Monoid
 import           Data.Text                 (Text)
 import qualified Data.Text.IO              as TIO
 import           System.Directory
 import           System.IO
-
-import           Napm.Context
-import           Napm.Password
-import           Napm.Types
 
 {-
 Issue a prompt and read a passphrase (without echo).
@@ -43,4 +37,3 @@ getDataDir = do
     case dir of
         Left e -> throwError $ show (e :: SomeException)
         Right dir' -> return dir'
-

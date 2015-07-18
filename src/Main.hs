@@ -14,7 +14,6 @@ import           System.IO
 import           Napm.Context
 import           Napm.Options
 import           Napm.Password
-import           Napm.Types
 import           Napm.Util
 
 main :: IO ()
