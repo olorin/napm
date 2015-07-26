@@ -38,6 +38,7 @@ library
                        containers,
                        cryptohash,
                        directory,
+                       filepath,
                        mtl,
                        lens,
                        optparse-applicative,

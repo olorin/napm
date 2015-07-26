@@ -18,6 +18,7 @@ import qualified Data.Text                 as T
 import qualified Data.Text.IO              as T
 import           System.Directory
 import           System.IO
+import           System.FilePath.Posix
 import           System.Posix.Files
 import           Text.Trifecta
 
@@ -89,6 +90,7 @@ writeContextMap :: (MonadError String m, MonadIO m)
                 -> FilePath
                 -> m ()
 writeContextMap m fp = do
+    liftIO $ createDirectoryIfMissing True (fst (splitFileName fp))
     write_res <- liftIO $ E.try (T.writeFile fp (fmtContextMap m))
     case write_res of
         Left e -> throwError $ show (e :: SomeException)
