@@ -17,8 +17,8 @@ import           Data.Text                 (Text)
 import qualified Data.Text                 as T
 import qualified Data.Text.IO              as T
 import           System.Directory
-import           System.IO
 import           System.FilePath.Posix
+import           System.IO
 import           System.Posix.Files
 import           Text.Trifecta
 
@@ -30,21 +30,26 @@ eol =  void $ oneOf "\n\r"
 comment :: Parser ()
 comment =  char '#' >> skipMany (noneOf "\r\n")
 
-context :: Parser String
-context =  many (noneOf ":")
+contextDomain :: Parser String
+contextDomain =  many (noneOf ":")
 
-passwordLength :: Parser Int
-passwordLength =  fromIntegral <$> decimal <* (try eol <|> try comment <|> eof)
+contextLength :: Parser Int
+contextLength =  fromIntegral <$> decimal <* (try eol <|> try comment <|> eof)
 
-passwordContext :: Parser Context
+passwordContext :: Parser (Domain, PasswordLength)
 passwordContext =  (,) <$>
-                   (T.pack <$> context) <*>
-                   (char ':' *> passwordLength)
+                   (Domain <$> T.pack <$> contextDomain) <*>
+                   (char ':' *> (PasswordLength <$> contextLength))
 
-contextLine :: Parser (Maybe Context)
-contextLine =  whiteSpace >> ((comment >> return Nothing) <|> liftM Just passwordContext) <* whiteSpace
+contextLine :: Parser (Maybe (Domain, PasswordLength))
+contextLine = do
+  whiteSpace
+  ctx <- (comment >> return Nothing)
+           <|> (liftM Just passwordContext)
+  whiteSpace
+  pure ctx
 
-contexts :: Parser [Context]
+contexts :: Parser [(Domain, PasswordLength)]
 contexts =  catMaybes <$> manyTill contextLine eof
 
 {-
@@ -71,15 +76,17 @@ parseContextFile fn = do
         Success r -> return $ M.fromList r
         Failure e -> throwError $ show e
 
-updateContextMap :: ContextMap -> Int -> Text -> (ContextMap, Int)
+updateContextMap :: ContextMap -> PasswordLength -> Domain -> (ContextMap, PasswordLength)
 updateContextMap m len ctx = case M.lookup ctx m of
     Nothing -> (M.insert ctx len m, len)
     Just x -> (m, x)
 
-fmtContextMap :: ContextMap -> Text
-fmtContextMap =  T.intercalate "\n" . map fmtItem . M.toList
-  where
-    fmtItem (ctx, len) = ctx <> ":" <> T.pack (show len)
+renderContextMap :: ContextMap -> Text
+renderContextMap =  T.intercalate "\n" . fmap renderContext . M.toList
+
+renderContext :: (Domain, PasswordLength) -> Text
+renderContext ((Domain ctx), (PasswordLength len)) =
+  ctx <> ":" <> T.pack (show len)
 
 {-
 Write context map out to file, ensuring it is accessible only by its
@@ -91,7 +98,7 @@ writeContextMap :: (MonadError String m, MonadIO m)
                 -> m ()
 writeContextMap m fp = do
     liftIO $ createDirectoryIfMissing True (fst (splitFileName fp))
-    write_res <- liftIO $ E.try (T.writeFile fp (fmtContextMap m))
+    write_res <- liftIO $ E.try (T.writeFile fp (renderContextMap m))
     case write_res of
         Left e -> throwError $ show (e :: SomeException)
         Right _ -> ensurePrivateMode fp
@@ -112,7 +119,7 @@ directory.
 -}
 napmContextFile :: FilePath
                 -> FilePath
-napmContextFile dataDir = dataDir <> "/contexts"
+napmContextFile dataDir = dataDir </> "contexts"
 
 {-
 Read existing contexts from the context file, if it exists.

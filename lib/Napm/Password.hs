@@ -8,9 +8,10 @@ import           Data.Monoid
 import           Data.Text              (Text)
 import qualified Data.Text              as T
 import           Data.Text.Encoding
+import           Napm.Types
 
-computePassword :: Int -> Text -> Text -> Text
-computePassword len passphrase context =
-    T.take len . decodeUtf8 . B64.encode $ SHA.hash salted
+computePassword :: PasswordLength -> Domain -> Passphrase -> Text
+computePassword (PasswordLength l) (Domain d) (Passphrase p) =
+    T.take l . decodeUtf8 . B64.encode $ SHA.hash salted
   where
-    salted = encodeUtf8 passphrase <> encodeUtf8 context
+    salted = encodeUtf8 p <> encodeUtf8 d

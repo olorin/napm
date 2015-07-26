@@ -6,7 +6,6 @@ module Main where
 
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Except
-import qualified Data.Text                  as T
 import qualified Data.Text.IO               as TIO
 import           Options.Applicative
 import           System.IO
@@ -14,6 +13,7 @@ import           System.IO
 import           Napm.Context
 import           Napm.Options
 import           Napm.Password
+import           Napm.Types
 import           Napm.Util
 
 main :: IO ()
@@ -23,16 +23,18 @@ main = do
         dataDir <- getDataDir
         ctxs <- getContexts dataDir
         pp <- liftIO readPassphrase
-        ctx <- liftIO $ getOrReadContext napmContext
+        ctx <- liftIO $ getOrReadDomain napmDomain
         let (newMap, len) = updateContextMap ctxs (pwlen napmPasswordLen) ctx
-        liftIO $ TIO.hPutStr stdout $ computePassword len pp ctx
+        liftIO $ TIO.hPutStr stdout $ computePassword len ctx pp
         writeContextMap newMap $ napmContextFile dataDir
     case res of
         Left e -> hPutStrLn stderr e
         Right _ -> return ()
   where
-    pwlen (-1) = 16
-    pwlen l    = l
+    pwlen Nothing  = 16
+    pwlen (Just l) = l
 
-    getOrReadContext "" = hPutStr stderr "Context: " >> TIO.hGetLine stdin
-    getOrReadContext c  = return $ T.pack c
+    getOrReadDomain Nothing = do
+      hPutStr stderr "Context: "
+      Domain <$> (TIO.hGetLine stdin)
+    getOrReadDomain (Just c) = pure c

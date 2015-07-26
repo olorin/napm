@@ -1,32 +1,34 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Main where
 
 import           Control.Monad
+
 import           Data.Monoid
 import           Data.Text     (Text)
 import qualified Data.Text     as T
-import           System.Random
-import           Test.Hspec
 
 import           Napm.Password
+import           Napm.Types
+
+import           Test.Hspec
+import           Test.QuickCheck
+
+tuple :: (Arbitrary a, Arbitrary b) => Gen (a,b)
+tuple = (,) <$> arbitrary <*> arbitrary
+
+triple :: (Arbitrary a, Arbitrary b, Arbitrary c) => Gen (a,b,c)
+triple = (,,) <$> arbitrary <*> arbitrary <*> arbitrary
 
 main :: IO ()
 main = hspec suite
 
 suite :: Spec
 suite = describe "computePassword" $ do
-    it "hashes an alphanumeric passphrase and context" $
-        computePassword 12 "s33d" "c0nt3xt" `shouldBe` "xwR3ziEmkGc7"
+    it "hashes a constant context to a consistent value" $
+        computePassword (PasswordLength 12) (Domain "c0nt3xt") (Passphrase "s33d") `shouldBe` "xwR3ziEmkGc7"
 
-    it "generates a password of the requested (short) length" $ do
-        l <- getRandomLength
-        s <- getRandomText 12
-        c <- getRandomText 12
-        T.length (computePassword l s c) `shouldBe` l
-
-getRandomLength :: IO Int
-getRandomLength = getStdRandom (randomR (1,50))
-
-getRandomText :: Int -> IO Text
-getRandomText n = liftM (T.pack . take n . randoms) getStdGen
+    it "generates a password of the requested length" $
+        forAll triple $ \(l@(PasswordLength m),p,d) ->
+          T.length (computePassword l p d) === m

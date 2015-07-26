@@ -3,15 +3,18 @@ module Napm.Options(
     napmOptParser
 ) where
 
+import qualified Data.Text           as T
+import           Napm.Types
 import           Options.Applicative
 
 data NapmOpts = NapmOpts
-    { napmPasswordLen :: Int
+    { napmPasswordLen :: Maybe PasswordLength
     -- ^ Override default (or configured) length of generated password.
-    , napmContext     :: String
+    , napmDomain      :: Maybe Domain
     -- ^ Supply context via the CLI rather than being prompted for it.
     } deriving Show
 
+-- FIXME: parsers
 napmOptParser :: ParserInfo NapmOpts
 napmOptParser =  info (helper <*> opts)
              (   fullDesc
@@ -20,18 +23,20 @@ napmOptParser =  info (helper <*> opts)
              )
   where
     opts = NapmOpts
-           <$> option auto (   long "password-length"
+           <$> ((maybe Nothing (Just . PasswordLength)) <$> ( option auto (   long "password-length"
                             <> short 'l'
                             <> metavar "LENGTH"
-                            <> value (-1)
+                            <> value Nothing
                             <> help ("Override default or configured password " <>
                                      "length. The default of -1 will cause the " <>
                                      "default or configured value to be used.")
-                           )
-           <*> strOption   (   long "context"
+                           )))
+           <*> ((maybe Nothing (Just . Domain . T.pack)) <$> option auto  (   long "context"
                             <> short 'c'
                             <> metavar "CONTEXT"
-                            <> value ""
+                            <> value Nothing
                             <> help ("Supply context via CLI rather than " <>
                                      "being prompted for it.")
-                           )
+                           ))
+
+
