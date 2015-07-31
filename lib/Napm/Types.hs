@@ -40,11 +40,10 @@ passwordLength = prism' unPasswordLength $ \n ->
 
 {-
 The context in which passwords are generated. Consists of a password
-domain/textual context that's not sensitive and easy for the user to
+domain/textual context that's not secret and easy for the user to
 remember (hostname, URL, whatever), plus the length of the generated
-password. Contexts are not considered sensitive, although they contain
-information which may aid an attacker and so should not be accessible
-by anyone other than the user.
+password. Revealing a context should not compromise the password, but
+they're considered non-public.
 -}
 type ContextMap = Map Text Int
 
