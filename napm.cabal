@@ -40,7 +40,6 @@ library
                        directory,
                        filepath,
                        mtl,
-                       lens,
                        optparse-applicative,
                        text,
                        transformers,
