@@ -20,7 +20,7 @@ category:            System
 
 source-repository    head
   type:              git
-  location:          git@github.com:fractalcat/napm.git
+  location:          git@github.com:olorin/napm.git
 
 library
   exposed-modules:     Napm.Password
