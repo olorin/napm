@@ -7,6 +7,8 @@ module Napm.Types(
   , ContextMap
 ) where
 
+import           Control.Applicative
+
 import           Data.Map  (Map)
 import           Data.Text (Text)
 import qualified Data.Text as T

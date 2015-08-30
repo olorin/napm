@@ -3,6 +3,8 @@
 
 module Napm.Util where
 
+import           Control.Applicative
+
 import           Control.Exception
 import           Control.Monad.Error.Class
 import           Control.Monad.IO.Class

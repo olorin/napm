@@ -3,6 +3,8 @@ module Napm.Options(
     napmOptParser
 ) where
 
+import           Control.Applicative
+
 import qualified Data.Text           as T
 import           Napm.Types
 import           Options.Applicative
